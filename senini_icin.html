@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>❤️ Sana</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#050509;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;overflow-x:hidden}
+main{width:min(760px,100%);text-align:center}
+#intro{min-height:88vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+h1{font-size:clamp(22px,5vw,36px);font-weight:600;margin:0 0 8px}
+.sub{color:#d9b8c4;font-size:14px;margin:0 0 12px}
+canvas{width:min(92vw,560px);height:min(92vw,560px);max-height:64vh;display:block;margin:0 auto}#filledHeart{width:min(92vw,560px);height:min(92vw,560px);max-height:64vh}
+.hint{font-size:13px;color:#d6a6b8;margin-top:8px;opacity:0;transition:opacity .5s}
+.hint.show{opacity:1}
+#reveal{display:none;padding:25px 0 40px;animation:fade .9s ease both;position:relative}
+#reveal.show{display:block}
+.eyebrow{color:#ff8eb4;text-transform:uppercase;letter-spacing:4px;font-size:10px;font-weight:bold;margin-bottom:12px}
+h2{font-size:clamp(25px,6vw,42px);line-height:1.12;margin:0 0 12px;letter-spacing:-.8px}
+.introline{color:#e8c5d1;line-height:1.7;max-width:470px;margin:0 auto 24px;font-size:14px}
+.progressline{height:2px;background:#381522;max-width:360px;margin:0 auto 26px;overflow:hidden;border-radius:5px}
+.progressline span{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff477e,#ffd5e4)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;text-align:left}
+.card{position:relative;overflow:hidden;border:1px solid #693046;background:linear-gradient(135deg,#21101a,#100a11 80%);padding:17px 16px 16px;border-radius:15px;min-height:91px;opacity:0;transform:translateY(14px) scale(.98);animation:cardIn .55s ease forwards;box-shadow:0 8px 25px #0003}
+.card::after{content:"";position:absolute;top:-30px;right:-22px;width:72px;height:72px;border:1px solid #ff7fa52b;border-radius:50%;box-shadow:0 0 0 10px #ff7fa50a,0 0 0 20px #ff7fa507}
+.card small{display:flex;align-items:center;gap:8px;color:#ff9fbd;margin-bottom:9px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase}
+.card small::before{content:"";width:16px;height:1px;background:#ff759e}
+.card strong{font-family:Georgia,"Times New Roman",serif;font-size:17px;font-weight:normal;line-height:1.35;overflow-wrap:anywhere;position:relative;z-index:1}
+.closing{max-width:520px;margin:28px auto 0;line-height:1.8;color:#f3dce5;font-family:Georgia,serif;font-size:17px}
+.closing .tinyheart{display:block;color:#ff6797;font-size:22px;margin-bottom:7px}
+button{margin-top:22px;border:1px solid #db6c92;border-radius:25px;background:linear-gradient(120deg,#4a142b,#24101b);color:#fff;padding:12px 20px;font-size:14px;cursor:pointer;transition:transform .2s,background .2s}
+button:hover{transform:translateY(-2px);background:#512037}
+@keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<main>
+<section id="intro">
+  <h1>Senin için…</h1>
+  <p class="sub">Bir kalbin oluşmasını izle ❤️</p>
+  <canvas id="heart" aria-label="I LOVE YOU yazılarından oluşan kalp animasyonu"></canvas>
+  <div class="hint" id="hint">❤️ Dokununca mesajlar açılacak</div>
+</section>
+<section id="reveal">
+  <canvas id="filledHeart" aria-label="Yirmi dilde seni seviyorum sözlerinden oluşan kalp"></canvas>
+  <p class="closing"><span class="tinyheart">♥</span>20 farklı dil…<br>ama hepsi aynı duyguyu anlatıyor.</p>
+  <button id="again">← Kalbi yeniden izle</button>
+</section>
+</main>
+<script>
+const canvas=document.getElementById('heart'),ctx=canvas.getContext('2d');
+let W=600,H=600,points=[],start=performance.now(),duration=10500,done=false,raf;
+function resize(){
+ const dpr=Math.min(window.devicePixelRatio||1,2);
+ const r=canvas.getBoundingClientRect(); W=600;H=600;
+ canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function heartPoint(t){
+ // Heart curve, normalized and vertically centered
+ const x=16*Math.pow(Math.sin(t),3);
+ const y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+ return {x:300+x*13.2,y:302-y*13.2};
+}
+function build(){
+ points=[];
+ // Put repeated I LOVE YOU text along the outline; closely spaced rows create the dotted/typewritten look.
+ const N=440;
+ for(let i=0;i<N;i++){
+   const t=(i/N)*Math.PI*2;
+   const p=heartPoint(t);
+   points.push({...p,phase:i/N});
+ }
+}
+function draw(now){
+ ctx.clearRect(0,0,W,H);
+ ctx.fillStyle='#050509';ctx.fillRect(0,0,W,H);
+ const progress=Math.min(1,(now-start)/duration);
+ const count=Math.floor(progress*points.length);
+ for(let i=0;i<count;i++){
+   const p=points[i];
+   const fade=Math.min(1,(progress-p.phase)*20+0.2);
+   ctx.save();ctx.globalAlpha=Math.max(.25,fade);
+   ctx.shadowColor='#ff4e91';ctx.shadowBlur=5;
+   ctx.fillStyle=(i%5===0)?'#ffd2e3':'#ff5c9b';
+   ctx.font='bold 8px Arial, sans-serif';
+   ctx.textAlign='center';ctx.textBaseline='middle';
+   ctx.fillText('I LOVE YOU',p.x,p.y);
+   ctx.restore();
+ }
+ // a soft glow at the current drawing point
+ if(count>0 && count<points.length){
+   const p=points[count-1];ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);
+   ctx.fillStyle='#fff0f6';ctx.shadowColor='#ff4e91';ctx.shadowBlur=16;ctx.fill();ctx.shadowBlur=0;
+ }
+ if(progress<1){raf=requestAnimationFrame(draw)} else {
+   done=true;document.getElementById('hint').classList.add('show');
+ }
+}
+function run(){
+ cancelAnimationFrame(raf);done=false;document.getElementById('hint').classList.remove('show');
+ start=performance.now();draw(start);
+}
+const phrases=[
+'I LOVE YOU','Te quiero','Je t’aime','Ich liebe dich','Ti amo','Eu te amo',
+'Я тебя люблю','أحبك','دوستت دارم','Σ’ αγαπώ','愛してる','사랑해',
+'我爱你','मैं तुमसे प्यार करता हूँ','আমি তোমাকে ভালোবাসি','Ik hou van jou',
+'Jag älskar dig','Kocham cię','Я тебе кохаю','Te iubesc'
+];
+const fillCanvas=document.getElementById('filledHeart');
+const fctx=fillCanvas.getContext('2d');
+let fillRaf=null;
+function drawFilledHeart(){
+ cancelAnimationFrame(fillRaf);
+ const dpr=Math.min(window.devicePixelRatio||1,2), size=700;
+ fillCanvas.width=size*dpr;fillCanvas.height=size*dpr;
+ fctx.setTransform(dpr,0,0,dpr,0,0);
+ const lines=[];
+ // Text rows are sampled against a heart equation so the words themselves form a filled heart.
+ for(let y=105;y<610;y+=19){
+   const yn=(y-350)/230;
+   const row=[];
+   for(let x=75;x<625;x+=7){
+     const xn=(x-350)/230;
+     const inside=Math.pow(xn*xn+yn*yn-1,3)-xn*xn*Math.pow(yn,3);
+     if(inside<=0) row.push(x);
+   }
+   if(row.length) lines.push({y,xs:row});
+ }
+ const total=lines.length, startAt=performance.now(), duration=9000;
+ function frame(now){
+   fctx.clearRect(0,0,size,size);
+   fctx.fillStyle='#050509';fctx.fillRect(0,0,size,size);
+   const prog=Math.min(1,(now-startAt)/duration);
+   const visible=Math.ceil(total*prog);
+   for(let li=0;li<visible;li++){
+     const line=lines[li], xs=line.xs;
+     let text='', j=0;
+     // Repeated translations run continuously across each row, with no language labels.
+     for(let x=0;x<xs.length;x+=1){
+       const word=phrases[(Math.floor(x/12)+li*3)%phrases.length];
+       text+=word+' ';
+       j++;
+     }
+     fctx.save();
+     fctx.beginPath();
+     fctx.rect(0,line.y-10,size,19);
+     fctx.clip();
+     fctx.font='bold 10px Arial, sans-serif';
+     fctx.textBaseline='middle';
+     fctx.fillStyle=(li%4===0)?'#ff9cbd':'#ff4f83';
+     fctx.shadowColor='#ff1f63';fctx.shadowBlur=4;
+     // Fill row with phrases, clipped to the heart's exact row bounds.
+     const left=xs[0], right=xs[xs.length-1]+8;
+     let x=left, idx=(li*2)%phrases.length;
+     while(x<right){
+       const word=phrases[idx%phrases.length];
+       fctx.fillText(word,x,line.y);
+       x+=fctx.measureText(word+'  ').width;
+       idx++;
+     }
+     fctx.restore();
+   }
+   if(prog<1) fillRaf=requestAnimationFrame(frame);
+ }
+ fillRaf=requestAnimationFrame(frame);
+}
+canvas.addEventListener('click',()=>{
+ if(!done)return;
+ document.getElementById('intro').style.display='none';
+ document.getElementById('reveal').classList.add('show');
+ drawFilledHeart();
+});
+document.getElementById('again').addEventListener('click',()=>{
+ document.getElementById('reveal').classList.remove('show');document.getElementById('intro').style.display='flex';run();
+});
+window.addEventListener('resize',()=>{resize();run()});
+resize();build();run();
+</script>
+</body>
+</html>
